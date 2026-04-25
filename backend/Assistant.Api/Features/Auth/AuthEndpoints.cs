@@ -5,6 +5,8 @@ namespace Assistant.Api.Features.Auth;
 
 public static class AuthEndpoints
 {
+    public const string AuthLoginRateLimitPolicy = "auth-login";
+
     public static RouteGroupBuilder MapAuthEndpoints(this RouteGroupBuilder api)
     {
         var authApi = api.MapGroup("/auth");
@@ -26,7 +28,7 @@ public static class AuthEndpoints
 
             var token = sessions.Create();
             return Results.Ok(new AuthResponse(token));
-        });
+        }).RequireRateLimiting(AuthLoginRateLimitPolicy);
 
         authApi.MapPost("/logout", (HttpRequest request, SessionStore sessions) =>
         {
