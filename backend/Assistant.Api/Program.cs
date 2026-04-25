@@ -1,6 +1,7 @@
 using Assistant.Api.Data;
 using Assistant.Api.Features.Auth;
 using Assistant.Api.Features.Backup;
+using Assistant.Api.Features.Health;
 using Assistant.Api.Features.Logs;
 using Assistant.Api.Features.Todos;
 using Assistant.Api.Features.Vms;
@@ -70,8 +71,7 @@ app.UseApiSessionAuth();
 
 var api = app.MapGroup("/api");
 
-api.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-
+api.MapHealthEndpoints();
 api.MapAuthEndpoints();
 api.MapVmEndpoints();
 api.MapLogEndpoints();

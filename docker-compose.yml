@@ -12,6 +12,12 @@ services:
       - "5251:8080"
     volumes:
       - assistant-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build:
@@ -21,7 +27,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   assistant-data:
