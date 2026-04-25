@@ -20,8 +20,10 @@ export type Vm = {
   ipAddress?: string
   hostname?: string
   description?: string
+  isFavorite: boolean
   accounts: VmAccount[]
   urls: VmUrl[]
+  updatedAt: string
 }
 
 export type DailyLog = {
@@ -45,6 +47,7 @@ export type WikiPage = {
   title: string
   slug: string
   content: string
+  isPinned: boolean
   updatedAt: string
 }
 
@@ -70,10 +73,18 @@ export type TodoStatusOption = {
   type: 'info' | 'primary' | 'success' | 'warning'
 }
 
-export type NavSection = 'logs' | 'vms' | 'todos' | 'wiki' | 'settings'
+export type NavSection = 'dashboard' | 'logs' | 'vms' | 'todos' | 'wiki' | 'settings'
 
 export type NavItem = {
   index: NavSection
   label: string
   icon: Component
+}
+
+export type GlobalSearchResult = {
+  id: number
+  section: Exclude<NavSection, 'dashboard' | 'settings'>
+  typeLabel: string
+  title: string
+  description?: string
 }

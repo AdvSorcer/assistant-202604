@@ -10,6 +10,7 @@ using Assistant.Api.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Data;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
@@ -57,6 +58,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
     db.Database.EnsureCreated();
+    EnsureCompatibleSchema(db);
 }
 
 if (app.Environment.IsDevelopment())
@@ -80,3 +82,30 @@ api.MapWikiEndpoints();
 api.MapBackupEndpoints();
 
 app.Run();
+
+static void EnsureCompatibleSchema(AssistantDbContext db)
+{
+    EnsureBooleanColumn(db, "Vms", "IsFavorite");
+    EnsureBooleanColumn(db, "WikiPages", "IsPinned");
+}
+
+static void EnsureBooleanColumn(AssistantDbContext db, string tableName, string columnName)
+{
+    var connection = db.Database.GetDbConnection();
+    if (connection.State != ConnectionState.Open)
+    {
+        connection.Open();
+    }
+
+    using var checkCommand = connection.CreateCommand();
+    checkCommand.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{tableName}') WHERE name = '{columnName}'";
+    var exists = Convert.ToInt32(checkCommand.ExecuteScalar()) > 0;
+    if (exists)
+    {
+        return;
+    }
+
+    using var alterCommand = connection.CreateCommand();
+    alterCommand.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} INTEGER NOT NULL DEFAULT 0";
+    alterCommand.ExecuteNonQuery();
+}

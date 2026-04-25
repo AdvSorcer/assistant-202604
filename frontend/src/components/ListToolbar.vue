@@ -15,7 +15,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="activeSection !== 'settings'" class="list-toolbar">
+  <div v-if="activeSection !== 'dashboard' && activeSection !== 'settings'" class="list-toolbar">
     <el-input
       :model-value="searchKeyword"
       clearable

@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { Document, Expand, Fold, Monitor, Notebook, Setting, Tickets } from '@element-plus/icons-vue'
-import type { NavItem, NavSection } from '../types'
+import { Document, Expand, Fold, HomeFilled, Monitor, Notebook, Setting, Tickets } from '@element-plus/icons-vue'
+import type { NavItem, NavSection, Vm, WikiPage } from '../types'
 
 defineProps<{
   activeSection: NavSection
   collapsed: boolean
+  favoriteVms: Vm[]
+  pinnedWikiPages: WikiPage[]
 }>()
 
 const emit = defineEmits<{
   'update:activeSection': [value: NavSection]
   'update:collapsed': [value: boolean]
+  viewVm: [item: Vm]
+  viewWiki: [item: WikiPage]
 }>()
 
 const mainItems: NavItem[] = [
+  { index: 'dashboard', label: '工作台', icon: HomeFilled },
   { index: 'logs', label: '日誌', icon: Notebook },
   { index: 'vms', label: 'VM 清單', icon: Monitor },
   { index: 'todos', label: '代辦清單', icon: Tickets },
@@ -51,6 +56,28 @@ const mainItems: NavItem[] = [
         <span>{{ item.label }}</span>
       </el-menu-item>
     </el-menu>
+
+    <div v-if="!collapsed && (favoriteVms.length || pinnedWikiPages.length)" class="sidebar-pins">
+      <div v-if="favoriteVms.length" class="sidebar-pin-group">
+        <div class="sidebar-pin-title">常用 VM</div>
+        <button v-for="vm in favoriteVms.slice(0, 5)" :key="vm.id" class="sidebar-pin" type="button" @click="emit('viewVm', vm)">
+          <span>{{ vm.name }}</span>
+        </button>
+      </div>
+
+      <div v-if="pinnedWikiPages.length" class="sidebar-pin-group">
+        <div class="sidebar-pin-title">置頂 Wiki</div>
+        <button
+          v-for="page in pinnedWikiPages.slice(0, 5)"
+          :key="page.id"
+          class="sidebar-pin"
+          type="button"
+          @click="emit('viewWiki', page)"
+        >
+          <span>{{ page.title }}</span>
+        </button>
+      </div>
+    </div>
 
     <el-menu
       :default-active="activeSection"

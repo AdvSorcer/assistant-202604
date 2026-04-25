@@ -9,6 +9,7 @@ import AppTopbar from './components/AppTopbar.vue'
 import ListToolbar from './components/ListToolbar.vue'
 import LoginPanel from './components/LoginPanel.vue'
 import { api, setAuthToken, toErrorMessage } from './lib/api'
+import DashboardPage from './pages/DashboardPage.vue'
 import LogsPage from './pages/LogsPage.vue'
 import SettingsPage from './pages/SettingsPage.vue'
 import TodosPage from './pages/TodosPage.vue'
@@ -18,6 +19,7 @@ import type {
   BackupImportPreview,
   BackupResponse,
   DailyLog,
+  GlobalSearchResult,
   NavSection,
   TodoItem,
   TodoStatus,
@@ -33,11 +35,12 @@ const authToken = ref(localStorage.getItem('assistant_token') ?? '')
 const loginPassword = ref('')
 const loginLoading = ref(false)
 const isAuthenticated = ref(false)
-const activeSection = ref<NavSection>('vms')
+const activeSection = ref<NavSection>('dashboard')
 const sidebarCollapsed = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const searchKeyword = ref('')
+const globalSearchKeyword = ref('')
 const todoStatusFilter = ref<TodoStatus | ''>('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -76,6 +79,7 @@ const emptyVmForm = () => ({
   hostname: '',
   ipAddress: '',
   description: '',
+  isFavorite: false,
   accounts: [{ label: 'default', username: '', password: '', notes: '' }] as VmAccount[],
   urls: [{ label: 'web', url: '' }] as VmUrl[],
 })
@@ -96,6 +100,7 @@ const emptyWikiForm = () => ({
   title: '',
   slug: '',
   content: '',
+  isPinned: false,
 })
 
 const vmForm = ref(emptyVmForm())
@@ -140,6 +145,81 @@ const filteredWikiPages = computed(() => {
   return keyword
     ? wikiPages.value.filter((page) => includesKeyword([page.title, page.slug, page.content], keyword))
     : wikiPages.value
+})
+
+const today = computed(() => new Date().toISOString().slice(0, 10))
+const favoriteVms = computed(() => vms.value.filter((vm) => vm.isFavorite).slice(0, 8))
+const pinnedWikiPages = computed(() => wikiPages.value.filter((page) => page.isPinned).slice(0, 8))
+const todayTodos = computed(() =>
+  todos.value
+    .filter((todo) => todo.status !== 'Done' && todo.status !== 'Archived' && (!todo.dueDate || todo.dueDate <= today.value))
+    .slice(0, 6),
+)
+const recentLogs = computed(() => [...logs.value].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5))
+const recentWikiPages = computed(() =>
+  [...wikiPages.value]
+    .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return Number(b.isPinned) - Number(a.isPinned)
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    })
+    .slice(0, 5),
+)
+const globalSearchResults = computed<GlobalSearchResult[]>(() => {
+  const keyword = normalize(globalSearchKeyword.value)
+  if (!keyword) {
+    return []
+  }
+
+  const results: GlobalSearchResult[] = []
+  vms.value
+    .filter((vm) =>
+      includesKeyword([vm.name, vm.ipAddress, vm.hostname, vm.description], keyword) ||
+      vm.accounts.some((account) => includesKeyword([account.label, account.username, account.notes], keyword)) ||
+      vm.urls.some((url) => includesKeyword([url.label, url.url], keyword)),
+    )
+    .slice(0, 6)
+    .forEach((vm) => results.push({
+      id: vm.id,
+      section: 'vms',
+      typeLabel: 'VM',
+      title: vm.name,
+      description: vm.ipAddress || vm.hostname || vm.description,
+    }))
+
+  todos.value
+    .filter((todo) => includesKeyword([todo.title, todo.description, todo.dueDate, todo.status], keyword))
+    .slice(0, 6)
+    .forEach((todo) => results.push({
+      id: todo.id,
+      section: 'todos',
+      typeLabel: '代辦',
+      title: todo.title,
+      description: todo.dueDate || todo.description,
+    }))
+
+  logs.value
+    .filter((log) => includesKeyword([log.date, log.content], keyword))
+    .slice(0, 6)
+    .forEach((log) => results.push({
+      id: log.id,
+      section: 'logs',
+      typeLabel: '日誌',
+      title: log.date,
+      description: log.content,
+    }))
+
+  wikiPages.value
+    .filter((page) => includesKeyword([page.title, page.slug, page.content], keyword))
+    .slice(0, 6)
+    .forEach((page) => results.push({
+      id: page.id,
+      section: 'wiki',
+      typeLabel: 'Wiki',
+      title: page.title,
+      description: page.slug,
+    }))
+
+  return results.slice(0, 12)
 })
 
 const pagedVms = computed(() => paginate(filteredVms.value))
@@ -339,6 +419,7 @@ function openVmDialog(vm?: Vm) {
         hostname: vm.hostname ?? '',
         ipAddress: vm.ipAddress ?? '',
         description: vm.description ?? '',
+        isFavorite: vm.isFavorite,
         accounts: vm.accounts.length ? vm.accounts.map((account) => ({ ...account })) : [],
         urls: vm.urls.length ? vm.urls.map((url) => ({ ...url })) : [],
       }
@@ -400,6 +481,26 @@ async function deleteVm(vm: Vm) {
   await api.delete(`/vms/${vm.id}`)
   ElMessage.success('VM 已刪除')
   await loadDashboard()
+}
+
+async function toggleVmFavorite(vm: Vm) {
+  const payload = {
+    name: vm.name,
+    hostname: vm.hostname ?? '',
+    ipAddress: vm.ipAddress ?? '',
+    description: vm.description ?? '',
+    isFavorite: !vm.isFavorite,
+    accounts: vm.accounts,
+    urls: vm.urls,
+  }
+
+  try {
+    await api.put(`/vms/${vm.id}`, payload)
+    ElMessage.success(payload.isFavorite ? '已加入常用 VM' : '已取消常用 VM')
+    await loadDashboard()
+  } catch (error) {
+    ElMessage.error(toErrorMessage(error))
+  }
 }
 
 function openLogDialog(log?: DailyLog) {
@@ -501,7 +602,7 @@ async function deleteTodo(todo: TodoItem) {
 function openWikiDialog(page?: WikiPage) {
   editingWikiId.value = page?.id ?? null
   wikiForm.value = page
-    ? { title: page.title, slug: page.slug, content: page.content }
+    ? { title: page.title, slug: page.slug, content: page.content, isPinned: page.isPinned }
     : emptyWikiForm()
   wikiDialogVisible.value = true
 }
@@ -547,12 +648,52 @@ async function deleteWiki(page: WikiPage) {
   await loadDashboard()
 }
 
+async function toggleWikiPinned(page: WikiPage) {
+  const payload = {
+    title: page.title,
+    slug: page.slug,
+    content: page.content,
+    isPinned: !page.isPinned,
+  }
+
+  try {
+    await api.put(`/wiki/${page.id}`, payload)
+    ElMessage.success(payload.isPinned ? '文件已置頂' : '文件已取消置頂')
+    await loadDashboard()
+  } catch (error) {
+    ElMessage.error(toErrorMessage(error))
+  }
+}
+
 async function confirmDelete(message: string) {
   await ElMessageBox.confirm(message, '刪除確認', {
     confirmButtonText: '刪除',
     cancelButtonText: '取消',
     type: 'warning',
   })
+}
+
+function openSection(section: Exclude<NavSection, 'dashboard' | 'settings'>) {
+  activeSection.value = section
+}
+
+function selectSearchResult(result: GlobalSearchResult) {
+  globalSearchKeyword.value = ''
+  activeSection.value = result.section
+
+  if (result.section === 'vms') {
+    const vm = vms.value.find((item) => item.id === result.id)
+    if (vm) openVmView(vm)
+  } else if (result.section === 'todos') {
+    const todo = todos.value.find((item) => item.id === result.id)
+    if (todo) openTodoView(todo)
+  } else if (result.section === 'logs') {
+    const log = logs.value.find((item) => item.id === result.id)
+    if (log) openLogView(log)
+  } else if (result.section === 'wiki') {
+    const page = wikiPages.value.find((item) => item.id === result.id)
+    if (page) openWikiView(page)
+  }
 }
 
 function todoStatusMeta(status: TodoStatus) {
@@ -600,10 +741,22 @@ onMounted(checkAuth)
   />
 
   <el-container v-else class="app-shell">
-    <AppSidebar v-model:active-section="activeSection" v-model:collapsed="sidebarCollapsed" />
+    <AppSidebar
+      v-model:active-section="activeSection"
+      v-model:collapsed="sidebarCollapsed"
+      :favorite-vms="favoriteVms"
+      :pinned-wiki-pages="pinnedWikiPages"
+      @view-vm="openVmView"
+      @view-wiki="openWikiView"
+    />
 
     <el-container class="content-shell">
-      <AppTopbar @logout="logout" />
+      <AppTopbar
+        v-model:search-keyword="globalSearchKeyword"
+        :search-results="globalSearchResults"
+        @select-search-result="selectSearchResult"
+        @logout="logout"
+      />
 
       <el-main v-loading="loading" class="main">
         <ListToolbar
@@ -611,6 +764,20 @@ onMounted(checkAuth)
           v-model:todo-status-filter="todoStatusFilter"
           :active-section="activeSection"
           :todo-status-options="todoStatusOptions"
+        />
+
+        <DashboardPage
+          v-if="activeSection === 'dashboard'"
+          :today-todos="todayTodos"
+          :recent-logs="recentLogs"
+          :favorite-vms="favoriteVms"
+          :recent-wiki-pages="recentWikiPages"
+          :todo-status-options="todoStatusOptions"
+          @open-section="openSection"
+          @view-vm="openVmView"
+          @view-log="openLogView"
+          @view-todo="openTodoView"
+          @view-wiki="openWikiView"
         />
 
         <VmsPage
@@ -623,6 +790,7 @@ onMounted(checkAuth)
           @view="openVmView"
           @edit="openVmDialog"
           @delete="deleteVm"
+          @toggle-favorite="toggleVmFavorite"
         />
 
         <LogsPage
@@ -660,6 +828,7 @@ onMounted(checkAuth)
           @view="openWikiView"
           @edit="openWikiDialog"
           @delete="deleteWiki"
+          @toggle-pinned="toggleWikiPinned"
         />
 
         <SettingsPage
@@ -689,6 +858,7 @@ onMounted(checkAuth)
         <el-descriptions-item label="名稱">{{ selectedVm.name }}</el-descriptions-item>
         <el-descriptions-item label="IP">{{ selectedVm.ipAddress || '-' }}</el-descriptions-item>
         <el-descriptions-item label="Hostname">{{ selectedVm.hostname || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="常用">{{ selectedVm.isFavorite ? '是' : '否' }}</el-descriptions-item>
         <el-descriptions-item label="備註">{{ selectedVm.description || '-' }}</el-descriptions-item>
       </el-descriptions>
 
@@ -756,6 +926,7 @@ onMounted(checkAuth)
       <el-descriptions :column="2" border>
         <el-descriptions-item label="標題">{{ selectedWiki.title }}</el-descriptions-item>
         <el-descriptions-item label="Slug">{{ selectedWiki.slug }}</el-descriptions-item>
+        <el-descriptions-item label="置頂">{{ selectedWiki.isPinned ? '是' : '否' }}</el-descriptions-item>
         <el-descriptions-item label="更新時間">{{ formatDateTime(selectedWiki.updatedAt) }}</el-descriptions-item>
       </el-descriptions>
       <div class="preview-title">文件內容</div>
@@ -786,6 +957,9 @@ onMounted(checkAuth)
       </el-form-item>
       <el-form-item label="備註">
         <el-input v-model="vmForm.description" type="textarea" :rows="2" />
+      </el-form-item>
+      <el-form-item>
+        <el-checkbox v-model="vmForm.isFavorite">常用 VM</el-checkbox>
       </el-form-item>
 
       <div class="section-title">
@@ -878,6 +1052,9 @@ onMounted(checkAuth)
           </el-form-item>
         </el-col>
       </el-row>
+      <el-form-item>
+        <el-checkbox v-model="wikiForm.isPinned">置頂文件</el-checkbox>
+      </el-form-item>
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="Markdown">

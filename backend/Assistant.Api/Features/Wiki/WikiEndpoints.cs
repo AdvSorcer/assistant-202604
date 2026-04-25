@@ -13,7 +13,8 @@ public static class WikiEndpoints
         wikiApi.MapGet("/", async (AssistantDbContext db) =>
             await db.WikiPages
                 .AsNoTracking()
-                .OrderBy(page => page.Title)
+                .OrderByDescending(page => page.IsPinned)
+                .ThenBy(page => page.Title)
                 .Select(page => page.ToWikiPageResponse())
                 .ToListAsync());
 
@@ -29,7 +30,8 @@ public static class WikiEndpoints
             {
                 Title = request.Title.Trim(),
                 Slug = request.Slug.Trim(),
-                Content = request.Content
+                Content = request.Content,
+                IsPinned = request.IsPinned
             };
             db.WikiPages.Add(page);
             await db.SaveChangesAsync();
@@ -53,6 +55,7 @@ public static class WikiEndpoints
             page.Title = request.Title.Trim();
             page.Slug = request.Slug.Trim();
             page.Content = request.Content;
+            page.IsPinned = request.IsPinned;
             page.UpdatedAt = DateTimeOffset.UtcNow;
             await db.SaveChangesAsync();
             return Results.Ok(page.ToWikiPageResponse());

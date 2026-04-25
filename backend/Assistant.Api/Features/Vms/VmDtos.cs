@@ -8,6 +8,7 @@ public sealed record VmRequest(
     string? Hostname,
     string? IpAddress,
     string? Description,
+    bool IsFavorite,
     List<VmAccountRequest> Accounts,
     List<VmUrlRequest> Urls);
 
@@ -21,6 +22,7 @@ public sealed record VmResponse(
     string? Hostname,
     string? IpAddress,
     string? Description,
+    bool IsFavorite,
     List<VmAccountResponse> Accounts,
     List<VmUrlResponse> Urls,
     DateTimeOffset CreatedAt,
@@ -38,6 +40,7 @@ public static class VmMapping
         vm.Hostname,
         vm.IpAddress,
         vm.Description,
+        vm.IsFavorite,
         vm.Accounts
             .Select(account => new VmAccountResponse(
                 account.Id,

@@ -19,11 +19,12 @@ public static class BackupEndpoints
                 .AsNoTracking()
                 .Include(vm => vm.Accounts)
                 .Include(vm => vm.Urls)
-                .OrderBy(vm => vm.Name)
+                .OrderByDescending(vm => vm.IsFavorite)
+                .ThenBy(vm => vm.Name)
                 .ToListAsync();
             var logs = await db.DailyLogs.AsNoTracking().OrderByDescending(log => log.Date).ToListAsync();
             var todos = await db.TodoItems.AsNoTracking().OrderBy(todo => todo.Status).ThenBy(todo => todo.DueDate).ToListAsync();
-            var wikiPages = await db.WikiPages.AsNoTracking().OrderBy(page => page.Title).ToListAsync();
+            var wikiPages = await db.WikiPages.AsNoTracking().OrderByDescending(page => page.IsPinned).ThenBy(page => page.Title).ToListAsync();
 
             return Results.Ok(new BackupResponse(
                 DateTimeOffset.UtcNow,
@@ -59,6 +60,7 @@ public static class BackupEndpoints
                 Hostname = vm.Hostname,
                 IpAddress = vm.IpAddress,
                 Description = vm.Description,
+                IsFavorite = vm.IsFavorite,
                 CreatedAt = vm.CreatedAt,
                 UpdatedAt = vm.UpdatedAt,
                 Accounts = vm.Accounts.Select(account => new VmAccount
@@ -99,6 +101,7 @@ public static class BackupEndpoints
                 Title = page.Title.Trim(),
                 Slug = page.Slug.Trim(),
                 Content = page.Content,
+                IsPinned = page.IsPinned,
                 CreatedAt = page.CreatedAt,
                 UpdatedAt = page.UpdatedAt
             }));

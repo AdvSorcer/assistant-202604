@@ -7,6 +7,7 @@ public sealed class ManagedVm
     public string? Hostname { get; set; }
     public string? IpAddress { get; set; }
     public string? Description { get; set; }
+    public bool IsFavorite { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public List<VmAccount> Accounts { get; set; } = [];
@@ -66,6 +67,7 @@ public sealed class WikiPage
     public required string Title { get; set; }
     public required string Slug { get; set; }
     public required string Content { get; set; }
+    public bool IsPinned { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

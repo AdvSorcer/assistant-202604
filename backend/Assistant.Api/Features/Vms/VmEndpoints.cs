@@ -17,7 +17,8 @@ public static class VmEndpoints
                 .AsNoTracking()
                 .Include(vm => vm.Accounts)
                 .Include(vm => vm.Urls)
-                .OrderBy(vm => vm.Name)
+                .OrderByDescending(vm => vm.IsFavorite)
+                .ThenBy(vm => vm.Name)
                 .ToListAsync();
 
             return vms.Select(vm => vm.ToVmResponse(cipher));
@@ -48,6 +49,7 @@ public static class VmEndpoints
                 Hostname = request.Hostname,
                 IpAddress = request.IpAddress,
                 Description = request.Description,
+                IsFavorite = request.IsFavorite,
                 Accounts = request.Accounts.Select(account => new VmAccount
                 {
                     Label = account.Label.Trim(),
@@ -89,6 +91,7 @@ public static class VmEndpoints
             vm.Hostname = request.Hostname;
             vm.IpAddress = request.IpAddress;
             vm.Description = request.Description;
+            vm.IsFavorite = request.IsFavorite;
             vm.UpdatedAt = DateTimeOffset.UtcNow;
 
             db.VmAccounts.RemoveRange(vm.Accounts);

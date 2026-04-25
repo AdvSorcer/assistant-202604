@@ -14,6 +14,7 @@ const emit = defineEmits<{
   view: [item: Vm]
   edit: [item: Vm]
   delete: [item: Vm]
+  toggleFavorite: [item: Vm]
   'update:currentPage': [value: number]
   'update:pageSize': [value: number]
 }>()
@@ -28,7 +29,14 @@ const emit = defineEmits<{
       </div>
     </template>
     <el-table :data="items" empty-text="尚未建立 VM 資料">
-      <el-table-column prop="name" label="名稱" min-width="160" />
+      <el-table-column label="名稱" min-width="180">
+        <template #default="{ row }">
+          <div class="name-cell">
+            <el-tag v-if="row.isFavorite" size="small" type="warning">常用</el-tag>
+            <span>{{ row.name }}</span>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="ipAddress" label="IP" width="160" />
       <el-table-column prop="hostname" label="Hostname" min-width="180" />
       <el-table-column label="帳號" min-width="180">
@@ -51,8 +59,11 @@ const emit = defineEmits<{
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="210" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
+          <el-button link :type="row.isFavorite ? 'warning' : 'primary'" @click="emit('toggleFavorite', row)">
+            {{ row.isFavorite ? '取消常用' : '設為常用' }}
+          </el-button>
           <el-button link type="primary" @click="emit('view', row)">查看</el-button>
           <el-button link type="primary" @click="emit('edit', row)">編輯</el-button>
           <el-button link type="danger" @click="emit('delete', row)">刪除</el-button>
