@@ -387,15 +387,8 @@ Docker Compose：
 
 1. 將 `EnsureCreated()` 改成 EF Core migrations
 2. 拆出 `App.vue` 裡的 dialogs
-3. Wiki 改用與日誌相同的 Markdown editor
-4. session 改成可跨重啟保存
-5. 支援備份合併匯入
-6. 增加自動化測試
-7. 資料量變大後改成後端搜尋與分頁
-
-README 曾列出的待辦已整合到此處：
-
-- JSON 匯入覆蓋還原已完成，後續可擴充成合併匯入。
-- 登入 session 目前仍是記憶體型，未來可改成可跨重啟保存或正式 Identity/JWT。
-- 目前搜尋與分頁在前端處理，資料量變大後建議改後端查詢與 SQLite FTS5。
+3. session 改成可跨重啟保存或正式 Identity/JWT
+4. 增加自動化測試
+5. 資料量變大後改成後端查詢與分頁，並評估 SQLite FTS5
+6. JSON 匯入覆蓋還原後續可擴充成合併匯入
 
