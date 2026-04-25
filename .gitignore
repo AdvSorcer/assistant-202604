@@ -1,0 +1,12 @@
+bin/
+obj/
+node_modules/
+dist/
+.claude/
+
+.env
+*.db
+*.db-shm
+*.db-wal
+backend/Assistant.Api/data/
+.DS_Store

@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: ./backend/Assistant.Api
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ConnectionStrings__Default: Data Source=/app/data/assistant.db
+      Cors__AllowedOrigins__0: http://localhost:8080
+    ports:
+      - "5251:8080"
+    volumes:
+      - assistant-data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:5251/api
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  assistant-data:
