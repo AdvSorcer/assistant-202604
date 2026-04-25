@@ -1,0 +1,4 @@
+interface:
+  display_name: "Advise"
+  short_description: "Prioritized project improvement advice"
+  default_prompt: "Use $advise to review this project and suggest the highest-value improvements."

@@ -56,6 +56,7 @@ Security__AdminPassword=change-me
 - 設定 SQLite
 - 設定 JSON enum
 - 設定 CORS
+- 設定登入 rate limit
 - 掛上 session auth middleware
 - 掛載各 feature endpoints
 
@@ -73,6 +74,9 @@ Features/
     AuthEndpoints.cs
     AuthDtos.cs
     SessionStore.cs
+
+  Health/
+    HealthEndpoints.cs
 
   Vms/
     VmEndpoints.cs
@@ -115,6 +119,7 @@ Services/
 ```csharp
 var api = app.MapGroup("/api");
 
+api.MapHealthEndpoints();
 api.MapAuthEndpoints();
 api.MapVmEndpoints();
 api.MapLogEndpoints();
@@ -153,8 +158,10 @@ backend/Assistant.Api/Models/DomainModels.cs
 
 - 一台 VM 可以有多組 `VmAccount`
 - 一台 VM 可以有多個 `VmUrl`
+- `ManagedVm.IsFavorite` 用於常用 VM 與 Dashboard/側欄快捷顯示
 - `DailyLog.Date` 是唯一索引
 - `WikiPage.Slug` 是唯一索引
+- `WikiPage.IsPinned` 用於置頂 Wiki 與 Dashboard/側欄顯示
 - `TodoStatus` 以字串儲存在 SQLite
 
 目前 DB 初始化使用：
@@ -162,6 +169,11 @@ backend/Assistant.Api/Models/DomainModels.cs
 ```csharp
 db.Database.EnsureCreated();
 ```
+
+目前因尚未導入 EF Core migrations，`Program.cs` 會在啟動時補上既有 SQLite DB 可能缺少的布林欄位：
+
+- `Vms.IsFavorite`
+- `WikiPages.IsPinned`
 
 未來若 schema 常變，建議改成 EF Core migrations。
 
@@ -187,6 +199,8 @@ db.Database.EnsureCreated();
 - `SessionStore` 是記憶體型，後端重啟後 token 會失效。
 - 目前是單使用者設計，不是多帳號系統。
 - 若要正式化，可改成 JWT、cookie auth，或 ASP.NET Core Identity。
+- `POST /api/auth/login` 有 fixed-window rate limit，目前設定為每分鐘 5 次，超過回 `429 Too Many Requests`。
+- 密碼 hash 模式使用 fixed-time 比對；plain password 模式也使用 fixed-time 比對。
 
 VM 密碼加密：
 
@@ -240,11 +254,15 @@ src/
   components/
     AppSidebar.vue
     AppTopbar.vue
+    GlobalSearch.vue
     LoginPanel.vue
     ListToolbar.vue
     ListPager.vue
+    VmDialogs.vue
+    WikiDialogs.vue
 
   pages/
+    DashboardPage.vue
     VmsPage.vue
     LogsPage.vue
     TodosPage.vue
@@ -256,33 +274,33 @@ src/
 
 - 登入狀態
 - 載入資料
-- 搜尋、篩選、分頁狀態
+- 全域搜尋、清單搜尋、篩選、分頁狀態
 - CRUD API 呼叫
-- 新增/編輯/查看 dialogs
+- Log/Todo 新增、編輯、查看 dialogs
 - 備份匯出與匯入
 
 已拆出的元件負責：
 
 - `LoginPanel.vue`：登入畫面
-- `AppSidebar.vue`：左側選單與收合
-- `AppTopbar.vue`：右上登出
+- `AppSidebar.vue`：左側選單、收合、常用 VM、置頂 Wiki
+- `AppTopbar.vue`：全域搜尋與登出
+- `GlobalSearch.vue`：跨 VM、日誌、代辦、Wiki 的搜尋結果彈層
 - `ListToolbar.vue`：搜尋與代辦狀態篩選
 - `ListPager.vue`：列表分頁
+- `VmDialogs.vue`：VM 查看與新增/編輯 dialog
+- `WikiDialogs.vue`：Wiki 查看與新增/編輯 dialog
+- `DashboardPage.vue`：首頁工作台
 - `pages/*`：各模組列表頁
 - `SettingsPage.vue`：備份匯出與匯入還原 UI
 
 下一輪前端若要繼續拆，建議拆：
 
 ```text
-components/dialogs/
-  VmDialog.vue
-  VmViewDialog.vue
+components/
   LogDialog.vue
   LogViewDialog.vue
   TodoDialog.vue
   TodoViewDialog.vue
-  WikiDialog.vue
-  WikiViewDialog.vue
 ```
 
 ## 前端資料流
@@ -297,6 +315,8 @@ components/dialogs/
 
 資料目前是在前端做搜尋、篩選、分頁：
 
+- Dashboard 顯示今天/逾期待辦、最近日誌、常用 VM、最近更新 Wiki
+- 全域搜尋可跨 VM、日誌、代辦、Wiki，點選結果會切到對應頁面並開啟詳情
 - VM 搜尋名稱、IP、hostname、備註、帳號、網址
 - 日誌搜尋日期與內容
 - 代辦搜尋標題、說明、日期、狀態
@@ -307,7 +327,9 @@ components/dialogs/
 ## UI 約定
 
 - 左側選單固定顯示，可手動收合
-- 上方區塊只保留登出按鈕
+- 首頁預設顯示 Dashboard 工作台
+- 左側選單在展開時顯示常用 VM 與置頂 Wiki 快捷入口
+- 上方區塊提供全域搜尋與登出
 - 設定頁放備份/還原
 - 日誌使用 `md-editor-v3`
 - Wiki 目前是 textarea + Markdown preview
@@ -381,14 +403,21 @@ Docker Compose：
 - Frontend：8080
 - API：5251
 
+Docker Compose 的 `api` service 有 healthcheck，容器內會呼叫：
+
+```text
+http://localhost:8080/api/health
+```
+
+`frontend` 透過 `depends_on.condition: service_healthy` 等待 API healthy 後再啟動。
+
 ## 待辦建議
 
 優先順序建議：
 
 1. 將 `EnsureCreated()` 改成 EF Core migrations
-2. 拆出 `App.vue` 裡的 dialogs
+2. 繼續拆出 `App.vue` 裡剩餘的 Log/Todo dialogs
 3. session 改成可跨重啟保存或正式 Identity/JWT
 4. 增加自動化測試
 5. 資料量變大後改成後端查詢與分頁，並評估 SQLite FTS5
 6. JSON 匯入覆蓋還原後續可擴充成合併匯入
-
