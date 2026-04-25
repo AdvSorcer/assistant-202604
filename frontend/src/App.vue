@@ -8,6 +8,8 @@ import AppSidebar from './components/AppSidebar.vue'
 import AppTopbar from './components/AppTopbar.vue'
 import ListToolbar from './components/ListToolbar.vue'
 import LoginPanel from './components/LoginPanel.vue'
+import VmDialogs from './components/VmDialogs.vue'
+import WikiDialogs from './components/WikiDialogs.vue'
 import { api, setAuthToken, toErrorMessage } from './lib/api'
 import DashboardPage from './pages/DashboardPage.vue'
 import LogsPage from './pages/LogsPage.vue'
@@ -852,43 +854,18 @@ onMounted(checkAuth)
     </el-container>
   </el-container>
 
-  <el-dialog v-model="vmViewVisible" title="查看 VM" width="760px">
-    <div v-if="selectedVm" class="detail-panel">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="名稱">{{ selectedVm.name }}</el-descriptions-item>
-        <el-descriptions-item label="IP">{{ selectedVm.ipAddress || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="Hostname">{{ selectedVm.hostname || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="常用">{{ selectedVm.isFavorite ? '是' : '否' }}</el-descriptions-item>
-        <el-descriptions-item label="備註">{{ selectedVm.description || '-' }}</el-descriptions-item>
-      </el-descriptions>
-
-      <div class="section-title">帳號</div>
-      <el-table :data="selectedVm.accounts" empty-text="沒有帳號資料" size="small">
-        <el-table-column prop="label" label="標籤" width="140" />
-        <el-table-column prop="username" label="帳號" width="180" />
-        <el-table-column label="密碼" min-width="180">
-          <template #default="{ row }">
-            <el-input :model-value="row.password || ''" readonly show-password />
-          </template>
-        </el-table-column>
-        <el-table-column prop="notes" label="備註" min-width="160" />
-      </el-table>
-
-      <div class="section-title">對外網址</div>
-      <el-table :data="selectedVm.urls" empty-text="沒有網址資料" size="small">
-        <el-table-column prop="label" label="標籤" width="160" />
-        <el-table-column label="網址" min-width="260">
-          <template #default="{ row }">
-            <el-link :href="row.url" target="_blank">{{ row.url }}</el-link>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
-    <template #footer>
-      <el-button @click="vmViewVisible = false">關閉</el-button>
-      <el-button v-if="selectedVm" type="primary" @click="vmViewVisible = false; openVmDialog(selectedVm)">編輯</el-button>
-    </template>
-  </el-dialog>
+  <VmDialogs
+    v-model:view-visible="vmViewVisible"
+    v-model:dialog-visible="vmDialogVisible"
+    v-model:form="vmForm"
+    :selected-vm="selectedVm"
+    :editing-vm-id="editingVmId"
+    :saving="saving"
+    @edit="openVmDialog"
+    @save="saveVm"
+    @add-account="addVmAccount"
+    @add-url="addVmUrl"
+  />
 
   <el-dialog v-model="logViewVisible" title="查看日誌" width="820px">
     <div v-if="selectedLog" class="detail-panel">
@@ -921,73 +898,19 @@ onMounted(checkAuth)
     </template>
   </el-dialog>
 
-  <el-dialog v-model="wikiViewVisible" title="查看文件" width="860px">
-    <div v-if="selectedWiki" class="detail-panel">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="標題">{{ selectedWiki.title }}</el-descriptions-item>
-        <el-descriptions-item label="Slug">{{ selectedWiki.slug }}</el-descriptions-item>
-        <el-descriptions-item label="置頂">{{ selectedWiki.isPinned ? '是' : '否' }}</el-descriptions-item>
-        <el-descriptions-item label="更新時間">{{ formatDateTime(selectedWiki.updatedAt) }}</el-descriptions-item>
-      </el-descriptions>
-      <div class="preview-title">文件內容</div>
-      <div class="markdown-preview view-preview" v-html="selectedWikiPreview"></div>
-    </div>
-    <template #footer>
-      <el-button @click="wikiViewVisible = false">關閉</el-button>
-      <el-button v-if="selectedWiki" type="primary" @click="wikiViewVisible = false; openWikiDialog(selectedWiki)">編輯</el-button>
-    </template>
-  </el-dialog>
-
-  <el-dialog v-model="vmDialogVisible" :title="editingVmId ? '編輯 VM' : '新增 VM'" width="860px">
-    <el-form label-position="top">
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="名稱" required>
-            <el-input v-model="vmForm.name" placeholder="例：prod-app-01" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="IP">
-            <el-input v-model="vmForm.ipAddress" placeholder="例：10.0.0.10" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-form-item label="Hostname">
-        <el-input v-model="vmForm.hostname" />
-      </el-form-item>
-      <el-form-item label="備註">
-        <el-input v-model="vmForm.description" type="textarea" :rows="2" />
-      </el-form-item>
-      <el-form-item>
-        <el-checkbox v-model="vmForm.isFavorite">常用 VM</el-checkbox>
-      </el-form-item>
-
-      <div class="section-title">
-        <span>帳號</span>
-        <el-button size="small" @click="addVmAccount">新增帳號</el-button>
-      </div>
-      <div v-for="(account, index) in vmForm.accounts" :key="index" class="nested-row">
-        <el-input v-model="account.label" placeholder="標籤" />
-        <el-input v-model="account.username" placeholder="帳號" />
-        <el-input v-model="account.password" placeholder="密碼" show-password />
-        <el-button type="danger" plain @click="vmForm.accounts.splice(index, 1)">移除</el-button>
-      </div>
-
-      <div class="section-title">
-        <span>對外網址</span>
-        <el-button size="small" @click="addVmUrl">新增網址</el-button>
-      </div>
-      <div v-for="(url, index) in vmForm.urls" :key="index" class="nested-row url-row">
-        <el-input v-model="url.label" placeholder="標籤" />
-        <el-input v-model="url.url" placeholder="https://example.com" />
-        <el-button type="danger" plain @click="vmForm.urls.splice(index, 1)">移除</el-button>
-      </div>
-    </el-form>
-    <template #footer>
-      <el-button @click="vmDialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="saveVm">儲存</el-button>
-    </template>
-  </el-dialog>
+  <WikiDialogs
+    v-model:view-visible="wikiViewVisible"
+    v-model:dialog-visible="wikiDialogVisible"
+    v-model:form="wikiForm"
+    :selected-wiki="selectedWiki"
+    :selected-wiki-preview="selectedWikiPreview"
+    :wiki-preview="wikiPreview"
+    :editing-wiki-id="editingWikiId"
+    :saving="saving"
+    :format-date-time="formatDateTime"
+    @edit="openWikiDialog"
+    @save="saveWiki"
+  />
 
   <el-dialog v-model="logDialogVisible" :title="editingLogId ? '編輯日誌' : '新增日誌'" width="920px">
     <el-form label-position="top">
@@ -1038,38 +961,4 @@ onMounted(checkAuth)
     </template>
   </el-dialog>
 
-  <el-dialog v-model="wikiDialogVisible" :title="editingWikiId ? '編輯文件' : '新增文件'" width="960px">
-    <el-form label-position="top">
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="標題" required>
-            <el-input v-model="wikiForm.title" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="Slug" required>
-            <el-input v-model="wikiForm.slug" placeholder="work/deploy-note" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-form-item>
-        <el-checkbox v-model="wikiForm.isPinned">置頂文件</el-checkbox>
-      </el-form-item>
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="Markdown">
-            <el-input v-model="wikiForm.content" type="textarea" :rows="16" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <div class="preview-title">預覽</div>
-          <div class="markdown-preview" v-html="wikiPreview"></div>
-        </el-col>
-      </el-row>
-    </el-form>
-    <template #footer>
-      <el-button @click="wikiDialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="saveWiki">儲存</el-button>
-    </template>
-  </el-dialog>
 </template>
