@@ -1,0 +1,4 @@
+interface:
+  display_name: "Init"
+  short_description: "Read infra.md to understand the project"
+  default_prompt: "Use $init to read infra.md and understand this project."
