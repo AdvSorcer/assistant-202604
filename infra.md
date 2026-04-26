@@ -332,7 +332,7 @@ src/
 - `GlobalSearch.vue`：跨 VM、日誌、代辦、Wiki 的搜尋結果彈層
 - `ListToolbar.vue`：搜尋與代辦狀態篩選
 - `ListPager.vue`：列表分頁
-- `VmDialogs.vue`：VM 查看與新增/編輯 dialog
+- `VmDialogs.vue`：VM 查看與新增/編輯 dialog；查看頁已提供複製 IP、Hostname、SSH、RDP、帳號、密碼、帳號級 SSH，以及開啟/複製網址等快捷操作
 - `WikiDialogs.vue`：Wiki 查看與新增/編輯 dialog
 - `DashboardPage.vue`：首頁工作台
 - `AiWeeklyReportPage.vue`：選取日誌範圍並產生可複製到 Outlook 的 AI 週報
@@ -379,6 +379,7 @@ components/
 - 設定頁放備份/還原與 AI OpenRouter 設定
 - 日誌使用 `md-editor-v3`
 - Wiki 目前是 textarea + Markdown preview
+- VM 查看頁已偏向工作頁設計，除了基本資料外，也提供帳號、密碼、連線指令與網址的快速複製/開啟操作
 - VM 密碼在查看頁使用 Element Plus `show-password` 眼睛按鈕顯示
 - AI 週報輸出使用 textarea，方便複製到 Outlook
 
