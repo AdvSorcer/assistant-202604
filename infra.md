@@ -302,6 +302,8 @@ src/
     LoginPanel.vue
     ListToolbar.vue
     ListPager.vue
+    LogDialogs.vue
+    TodoDialogs.vue
     VmDialogs.vue
     WikiDialogs.vue
 
@@ -321,7 +323,7 @@ src/
 - 載入資料
 - 全域搜尋、清單搜尋、篩選、分頁狀態
 - CRUD API 呼叫
-- Log/Todo 新增、編輯、查看 dialogs
+- Log/Todo/VM/Wiki dialog 狀態與儲存流程協調
 - 備份匯出與匯入
 
 已拆出的元件負責：
@@ -332,6 +334,8 @@ src/
 - `GlobalSearch.vue`：跨 VM、日誌、代辦、Wiki 的搜尋結果彈層
 - `ListToolbar.vue`：搜尋與代辦狀態篩選
 - `ListPager.vue`：列表分頁
+- `LogDialogs.vue`：日誌查看與新增/編輯 dialog
+- `TodoDialogs.vue`：代辦查看與新增/編輯 dialog
 - `VmDialogs.vue`：VM 查看與新增/編輯 dialog；查看頁已提供複製 IP、Hostname、SSH、RDP、帳號、密碼、帳號級 SSH，以及開啟/複製網址等快捷操作
 - `WikiDialogs.vue`：Wiki 查看與新增/編輯 dialog
 - `DashboardPage.vue`：首頁工作台
@@ -339,14 +343,12 @@ src/
 - `pages/*`：各模組列表頁
 - `SettingsPage.vue`：備份匯出與匯入還原 UI
 
-下一輪前端若要繼續拆，建議拆：
+下一輪前端若要繼續拆，建議視表單複雜度再把各 Dialogs 元件內部切成更小元件。
 
 ```text
 components/
-  LogDialog.vue
-  LogViewDialog.vue
-  TodoDialog.vue
-  TodoViewDialog.vue
+  {Feature}ViewDialog.vue
+  {Feature}EditDialog.vue
 ```
 
 ## 前端資料流
@@ -464,8 +466,7 @@ http://localhost:8080/api/health
 優先順序建議：
 
 1. 將 `EnsureCreated()` 改成 EF Core migrations
-2. 繼續拆出 `App.vue` 裡剩餘的 Log/Todo dialogs
-3. session 改成可跨重啟保存或正式 Identity/JWT
-4. 增加自動化測試
-5. 資料量變大後改成後端查詢與分頁，並評估 SQLite FTS5
-6. JSON 匯入覆蓋還原後續可擴充成合併匯入
+2. session 改成可跨重啟保存或正式 Identity/JWT
+3. 增加自動化測試
+4. 資料量變大後改成後端查詢與分頁，並評估 SQLite FTS5
+5. JSON 匯入覆蓋還原後續可擴充成合併匯入

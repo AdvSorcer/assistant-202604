@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import MarkdownIt from 'markdown-it'
-import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { computed, onMounted, ref, watch } from 'vue'
 import AppSidebar from './components/AppSidebar.vue'
 import AppTopbar from './components/AppTopbar.vue'
 import ListToolbar from './components/ListToolbar.vue'
+import LogDialogs from './components/LogDialogs.vue'
 import LoginPanel from './components/LoginPanel.vue'
+import TodoDialogs from './components/TodoDialogs.vue'
 import VmDialogs from './components/VmDialogs.vue'
 import WikiDialogs from './components/WikiDialogs.vue'
 import { api, setAuthToken, toErrorMessage } from './lib/api'
@@ -914,36 +915,17 @@ onMounted(checkAuth)
     @add-url="addVmUrl"
   />
 
-  <el-dialog v-model="logViewVisible" title="查看日誌" width="820px">
-    <div v-if="selectedLog" class="detail-panel">
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="日期">{{ selectedLog.date }}</el-descriptions-item>
-      </el-descriptions>
-      <div class="preview-title">日誌內容</div>
-      <div class="markdown-preview view-preview" v-html="selectedLogPreview"></div>
-    </div>
-    <template #footer>
-      <el-button @click="logViewVisible = false">關閉</el-button>
-      <el-button v-if="selectedLog" type="primary" @click="logViewVisible = false; openLogDialog(selectedLog)">編輯</el-button>
-    </template>
-  </el-dialog>
-
-  <el-dialog v-model="todoViewVisible" title="查看代辦" width="620px">
-    <div v-if="selectedTodo" class="detail-panel">
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="事項">{{ selectedTodo.title }}</el-descriptions-item>
-        <el-descriptions-item label="日期">{{ selectedTodo.dueDate || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="狀態">
-          <el-tag :type="todoStatusMeta(selectedTodo.status).type">{{ todoStatusMeta(selectedTodo.status).label }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="說明">{{ selectedTodo.description || '-' }}</el-descriptions-item>
-      </el-descriptions>
-    </div>
-    <template #footer>
-      <el-button @click="todoViewVisible = false">關閉</el-button>
-      <el-button v-if="selectedTodo" type="primary" @click="todoViewVisible = false; openTodoDialog(selectedTodo)">編輯</el-button>
-    </template>
-  </el-dialog>
+  <LogDialogs
+    v-model:view-visible="logViewVisible"
+    v-model:dialog-visible="logDialogVisible"
+    v-model:form="logForm"
+    :selected-log="selectedLog"
+    :selected-log-preview="selectedLogPreview"
+    :editing-log-id="editingLogId"
+    :saving="saving"
+    @edit="openLogDialog"
+    @save="saveLog"
+  />
 
   <WikiDialogs
     v-model:view-visible="wikiViewVisible"
@@ -959,53 +941,17 @@ onMounted(checkAuth)
     @save="saveWiki"
   />
 
-  <el-dialog v-model="logDialogVisible" :title="editingLogId ? '編輯日誌' : '新增日誌'" width="920px">
-    <el-form label-position="top">
-      <el-form-item label="日期" required>
-        <el-date-picker v-model="logForm.date" type="date" value-format="YYYY-MM-DD" />
-      </el-form-item>
-      <el-form-item label="日誌內容" required>
-        <MdEditor v-model="logForm.content" language="zh-TW" class="log-editor" />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <el-button @click="logDialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="saveLog">儲存</el-button>
-    </template>
-  </el-dialog>
-
-  <el-dialog v-model="todoDialogVisible" :title="editingTodoId ? '編輯代辦' : '新增代辦'" width="620px">
-    <el-form label-position="top">
-      <el-form-item label="事項" required>
-        <el-input v-model="todoForm.title" />
-      </el-form-item>
-      <el-form-item label="說明">
-        <el-input v-model="todoForm.description" type="textarea" :rows="4" />
-      </el-form-item>
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="日期">
-            <el-date-picker v-model="todoForm.dueDate" type="date" value-format="YYYY-MM-DD" clearable />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="狀態">
-            <el-select v-model="todoForm.status">
-              <el-option
-                v-for="option in todoStatusOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
-    <template #footer>
-      <el-button @click="todoDialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="saveTodo">儲存</el-button>
-    </template>
-  </el-dialog>
+  <TodoDialogs
+    v-model:view-visible="todoViewVisible"
+    v-model:dialog-visible="todoDialogVisible"
+    v-model:form="todoForm"
+    :selected-todo="selectedTodo"
+    :editing-todo-id="editingTodoId"
+    :saving="saving"
+    :todo-status-options="todoStatusOptions"
+    :todo-status-meta="todoStatusMeta"
+    @edit="openTodoDialog"
+    @save="saveTodo"
+  />
 
 </template>
