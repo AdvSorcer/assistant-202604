@@ -67,13 +67,32 @@ export type BackupImportPreview = {
   warnings: string[]
 }
 
+export type AiSettings = {
+  provider: string
+  model: string
+  hasApiKey: boolean
+}
+
+export type AiSettingsForm = {
+  model: string
+  apiKey: string
+}
+
+export type AiWeeklyReportResponse = {
+  report: string
+  logsCount: number
+  model: string
+  startDate: string
+  endDate: string
+}
+
 export type TodoStatusOption = {
   label: string
   value: TodoStatus
   type: 'info' | 'primary' | 'success' | 'warning'
 }
 
-export type NavSection = 'dashboard' | 'logs' | 'vms' | 'todos' | 'wiki' | 'settings'
+export type NavSection = 'dashboard' | 'logs' | 'vms' | 'todos' | 'wiki' | 'ai-weekly' | 'settings'
 
 export type NavItem = {
   index: NavSection
@@ -83,7 +102,7 @@ export type NavItem = {
 
 export type GlobalSearchResult = {
   id: number
-  section: Exclude<NavSection, 'dashboard' | 'settings'>
+  section: Exclude<NavSection, 'dashboard' | 'ai-weekly' | 'settings'>
   typeLabel: string
   title: string
   description?: string

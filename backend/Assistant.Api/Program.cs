@@ -1,8 +1,10 @@
 using Assistant.Api.Data;
 using Assistant.Api.Features.Auth;
+using Assistant.Api.Features.AiWeeklyReports;
 using Assistant.Api.Features.Backup;
 using Assistant.Api.Features.Health;
 using Assistant.Api.Features.Logs;
+using Assistant.Api.Features.Settings;
 using Assistant.Api.Features.Todos;
 using Assistant.Api.Features.Vms;
 using Assistant.Api.Features.Wiki;
@@ -35,6 +37,7 @@ builder.Services.AddDbContext<AssistantDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddSingleton<IPasswordCipher, PasswordCipher>();
 builder.Services.AddSingleton<SessionStore>();
+builder.Services.AddHttpClient();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -80,6 +83,8 @@ api.MapLogEndpoints();
 api.MapTodoEndpoints();
 api.MapWikiEndpoints();
 api.MapBackupEndpoints();
+api.MapSettingsEndpoints();
+api.MapAiWeeklyReportEndpoints();
 
 app.Run();
 
@@ -87,6 +92,7 @@ static void EnsureCompatibleSchema(AssistantDbContext db)
 {
     EnsureBooleanColumn(db, "Vms", "IsFavorite");
     EnsureBooleanColumn(db, "WikiPages", "IsPinned");
+    EnsureAppSettingsTable(db);
 }
 
 static void EnsureBooleanColumn(AssistantDbContext db, string tableName, string columnName)
@@ -108,4 +114,25 @@ static void EnsureBooleanColumn(AssistantDbContext db, string tableName, string 
     using var alterCommand = connection.CreateCommand();
     alterCommand.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} INTEGER NOT NULL DEFAULT 0";
     alterCommand.ExecuteNonQuery();
+}
+
+static void EnsureAppSettingsTable(AssistantDbContext db)
+{
+    var connection = db.Database.GetDbConnection();
+    if (connection.State != ConnectionState.Open)
+    {
+        connection.Open();
+    }
+
+    using var command = connection.CreateCommand();
+    command.CommandText = """
+        CREATE TABLE IF NOT EXISTS AppSettings (
+            Id INTEGER NOT NULL CONSTRAINT PK_AppSettings PRIMARY KEY AUTOINCREMENT,
+            Key TEXT NOT NULL,
+            Value TEXT NULL,
+            UpdatedAt TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_AppSettings_Key ON AppSettings (Key);
+        """;
+    command.ExecuteNonQuery();
 }

@@ -71,3 +71,11 @@ public sealed class WikiPage
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
+
+public sealed class AppSetting
+{
+    public int Id { get; set; }
+    public required string Key { get; set; }
+    public string? Value { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}

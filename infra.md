@@ -97,6 +97,14 @@ Features/
   Backup/
     BackupEndpoints.cs
     BackupDtos.cs
+
+  Settings/
+    SettingsEndpoints.cs
+    SettingsDtos.cs
+
+  AiWeeklyReports/
+    AiWeeklyReportEndpoints.cs
+    AiWeeklyReportDtos.cs
 ```
 
 資料層：
@@ -163,6 +171,7 @@ backend/Assistant.Api/Models/DomainModels.cs
 - `WikiPage.Slug` 是唯一索引
 - `WikiPage.IsPinned` 用於置頂 Wiki 與 Dashboard/側欄顯示
 - `TodoStatus` 以字串儲存在 SQLite
+- `AppSetting.Key` 是唯一索引，用於保存系統設定
 
 目前 DB 初始化使用：
 
@@ -174,6 +183,8 @@ db.Database.EnsureCreated();
 
 - `Vms.IsFavorite`
 - `WikiPages.IsPinned`
+
+目前也會在啟動時建立 `AppSettings` table（若不存在），用來保存 AI 設定。
 
 未來若 schema 常變，建議改成 EF Core migrations。
 
@@ -209,6 +220,39 @@ VM 密碼加密：
 - 加密金鑰來自 `Security:EncryptionKey`
 - 開發環境若沒設定金鑰會使用 development fallback
 - 正式使用一定要設定 `Security__EncryptionKey`
+- OpenRouter API key 也使用同一個 `PasswordCipher` 加密後保存於 `AppSettings`
+
+## AI 週報
+
+AI 週報功能位於：
+
+```text
+Features/AiWeeklyReports/
+Features/Settings/
+```
+
+API：
+
+- `GET /api/settings/ai`
+- `PUT /api/settings/ai`
+- `POST /api/ai-weekly-report/generate`
+
+目前設計：
+
+1. 設定頁保存 OpenRouter API key 與模型名稱
+2. API key 不回傳到前端，只回傳 `hasApiKey`
+3. 前端 AI 週報頁預設選取本週週一到週五
+4. 後端依日期範圍讀取 `DailyLogs`
+5. 後端呼叫 OpenRouter `https://openrouter.ai/api/v1/chat/completions`
+6. 回傳適合直接複製到 Outlook 的繁體中文週報文字
+
+預設模型：
+
+```text
+minimax/minimax-m2.7
+```
+
+OpenRouter 呼叫放在後端，避免 API key 暴露在瀏覽器。
 
 ## 備份與還原
 
@@ -263,6 +307,7 @@ src/
 
   pages/
     DashboardPage.vue
+    AiWeeklyReportPage.vue
     VmsPage.vue
     LogsPage.vue
     TodosPage.vue
@@ -290,6 +335,7 @@ src/
 - `VmDialogs.vue`：VM 查看與新增/編輯 dialog
 - `WikiDialogs.vue`：Wiki 查看與新增/編輯 dialog
 - `DashboardPage.vue`：首頁工作台
+- `AiWeeklyReportPage.vue`：選取日誌範圍並產生可複製到 Outlook 的 AI 週報
 - `pages/*`：各模組列表頁
 - `SettingsPage.vue`：備份匯出與匯入還原 UI
 
@@ -330,10 +376,11 @@ components/
 - 首頁預設顯示 Dashboard 工作台
 - 左側選單在展開時顯示常用 VM 與置頂 Wiki 快捷入口
 - 上方區塊提供全域搜尋與登出
-- 設定頁放備份/還原
+- 設定頁放備份/還原與 AI OpenRouter 設定
 - 日誌使用 `md-editor-v3`
 - Wiki 目前是 textarea + Markdown preview
 - VM 密碼在查看頁使用 Element Plus `show-password` 眼睛按鈕顯示
+- AI 週報輸出使用 textarea，方便複製到 Outlook
 
 ## 常見維護注意事項
 

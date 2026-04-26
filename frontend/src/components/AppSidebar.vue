@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Document, Expand, Fold, HomeFilled, Monitor, Notebook, Setting, Tickets } from '@element-plus/icons-vue'
+import { DataAnalysis, Document, Expand, Fold, HomeFilled, Monitor, Notebook, Setting, Tickets } from '@element-plus/icons-vue'
 import type { NavItem, NavSection, Vm, WikiPage } from '../types'
 
 defineProps<{
@@ -22,6 +22,7 @@ const mainItems: NavItem[] = [
   { index: 'vms', label: 'VM 清單', icon: Monitor },
   { index: 'todos', label: '代辦清單', icon: Tickets },
   { index: 'wiki', label: 'Wiki 文件', icon: Document },
+  { index: 'ai-weekly', label: 'AI 週報', icon: DataAnalysis },
 ]
 </script>
 

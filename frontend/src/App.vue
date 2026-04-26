@@ -11,6 +11,7 @@ import LoginPanel from './components/LoginPanel.vue'
 import VmDialogs from './components/VmDialogs.vue'
 import WikiDialogs from './components/WikiDialogs.vue'
 import { api, setAuthToken, toErrorMessage } from './lib/api'
+import AiWeeklyReportPage from './pages/AiWeeklyReportPage.vue'
 import DashboardPage from './pages/DashboardPage.vue'
 import LogsPage from './pages/LogsPage.vue'
 import SettingsPage from './pages/SettingsPage.vue'
@@ -18,6 +19,8 @@ import TodosPage from './pages/TodosPage.vue'
 import VmsPage from './pages/VmsPage.vue'
 import WikiPageList from './pages/WikiPageList.vue'
 import type {
+  AiSettings,
+  AiSettingsForm,
   BackupImportPreview,
   BackupResponse,
   DailyLog,
@@ -51,6 +54,9 @@ const selectedBackupFile = ref<File | null>(null)
 const backupImportData = ref<BackupResponse | null>(null)
 const backupImportPreview = ref<BackupImportPreview | null>(null)
 const importingBackup = ref(false)
+const aiSettings = ref<AiSettings | null>(null)
+const aiSettingsForm = ref<AiSettingsForm>({ model: 'minimax/minimax-m2.7', apiKey: '' })
+const savingAiSettings = ref(false)
 const vms = ref<Vm[]>([])
 const logs = ref<DailyLog[]>([])
 const todos = ref<TodoItem[]>([])
@@ -302,17 +308,20 @@ function clearAuth() {
 async function loadDashboard() {
   loading.value = true
   try {
-    const [vmResult, logResult, todoResult, wikiResult] = await Promise.all([
+    const [vmResult, logResult, todoResult, wikiResult, aiSettingsResult] = await Promise.all([
       api.get<Vm[]>('/vms'),
       api.get<DailyLog[]>('/logs'),
       api.get<TodoItem[]>('/todos'),
       api.get<WikiPage[]>('/wiki'),
+      api.get<AiSettings>('/settings/ai'),
     ])
 
     vms.value = vmResult.data
     logs.value = logResult.data
     todos.value = todoResult.data
     wikiPages.value = wikiResult.data
+    aiSettings.value = aiSettingsResult.data
+    aiSettingsForm.value = { model: aiSettingsResult.data.model, apiKey: '' }
   } catch (error) {
     if ((error as { response?: { status?: number } }).response?.status === 401) {
       clearAuth()
@@ -323,6 +332,28 @@ async function loadDashboard() {
     ElMessage.error(toErrorMessage(error))
   } finally {
     loading.value = false
+  }
+}
+
+async function saveAiSettings() {
+  if (!aiSettingsForm.value.model.trim()) {
+    ElMessage.warning('請輸入模型名稱')
+    return
+  }
+
+  savingAiSettings.value = true
+  try {
+    const result = await api.put<AiSettings>('/settings/ai', {
+      model: aiSettingsForm.value.model.trim(),
+      apiKey: aiSettingsForm.value.apiKey.trim() || null,
+    })
+    aiSettings.value = result.data
+    aiSettingsForm.value = { model: result.data.model, apiKey: '' }
+    ElMessage.success('AI 設定已儲存')
+  } catch (error) {
+    ElMessage.error(toErrorMessage(error))
+  } finally {
+    savingAiSettings.value = false
   }
 }
 
@@ -676,7 +707,7 @@ async function confirmDelete(message: string) {
   })
 }
 
-function openSection(section: Exclude<NavSection, 'dashboard' | 'settings'>) {
+function openSection(section: Exclude<NavSection, 'dashboard' | 'ai-weekly' | 'settings'>) {
   activeSection.value = section
 }
 
@@ -763,6 +794,7 @@ onMounted(checkAuth)
 
       <el-main v-loading="loading" class="main">
         <ListToolbar
+          v-if="activeSection !== 'dashboard' && activeSection !== 'ai-weekly' && activeSection !== 'settings'"
           v-model:search-keyword="searchKeyword"
           v-model:todo-status-filter="todoStatusFilter"
           :active-section="activeSection"
@@ -838,14 +870,24 @@ onMounted(checkAuth)
           @toggle-pinned="toggleWikiPinned"
         />
 
+        <AiWeeklyReportPage
+          v-if="activeSection === 'ai-weekly'"
+          :logs="logs"
+          :ai-settings="aiSettings"
+        />
+
         <SettingsPage
           v-if="activeSection === 'settings'"
+          v-model:ai-settings-form="aiSettingsForm"
           :selected-backup-file="selectedBackupFile"
           :backup-import-preview="backupImportPreview"
           :importing-backup="importingBackup"
+          :ai-settings="aiSettings"
+          :saving-ai-settings="savingAiSettings"
           @export-backup="exportBackup"
           @choose-backup-file="openBackupFilePicker"
           @import-backup="importBackup"
+          @save-ai-settings="saveAiSettings"
         />
 
         <input
