@@ -273,6 +273,34 @@ body {
   min-width: 0;
 }
 
+.today-log-card {
+  grid-column: 1 / -1;
+}
+
+.today-log-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.today-log-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 6px 0 0;
+  color: #6b7280;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.today-log-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .dashboard-list {
   display: grid;
   gap: 8px;
@@ -485,6 +513,15 @@ body {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .today-log-content {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  .today-log-actions {
+    justify-content: flex-start;
   }
 
   .settings-panel {

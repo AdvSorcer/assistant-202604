@@ -2,6 +2,8 @@
 import type { DailyLog, TodoItem, TodoStatus, TodoStatusOption, Vm, WikiPage } from '../types'
 
 defineProps<{
+  today: string
+  todayLog: DailyLog | null
   todayTodos: TodoItem[]
   recentLogs: DailyLog[]
   favoriteVms: Vm[]
@@ -11,6 +13,8 @@ defineProps<{
 
 const emit = defineEmits<{
   openSection: [section: 'vms' | 'logs' | 'todos' | 'wiki']
+  createTodayLog: []
+  editLog: [item: DailyLog]
   viewVm: [item: Vm]
   viewLog: [item: DailyLog]
   viewTodo: [item: TodoItem]
@@ -40,6 +44,34 @@ function formatDateTime(value: string) {
     </section>
 
     <div class="dashboard-grid">
+      <el-card shadow="never" class="dashboard-card today-log-card">
+        <template #header>
+          <div class="card-header">
+            <span>今日日誌</span>
+            <el-button link type="primary" @click="emit('openSection', 'logs')">全部</el-button>
+          </div>
+        </template>
+        <div v-if="todayLog" class="today-log-content">
+          <div>
+            <div class="item-title">{{ todayLog.date }}</div>
+            <p class="today-log-snippet">{{ todayLog.content }}</p>
+          </div>
+          <div class="today-log-actions">
+            <el-button type="primary" plain @click="emit('viewLog', todayLog)">查看</el-button>
+            <el-button type="primary" @click="emit('editLog', todayLog)">編輯</el-button>
+          </div>
+        </div>
+        <div v-else class="today-log-content">
+          <div>
+            <div class="item-title">{{ today }}</div>
+            <p class="today-log-snippet">今天還沒有日誌。</p>
+          </div>
+          <div class="today-log-actions">
+            <el-button type="primary" @click="emit('createTodayLog')">建立今日日誌</el-button>
+          </div>
+        </div>
+      </el-card>
+
       <el-card shadow="never" class="dashboard-card">
         <template #header>
           <div class="card-header">

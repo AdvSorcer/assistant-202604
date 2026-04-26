@@ -152,6 +152,7 @@ const filteredWikiPages = computed(() => {
 const today = computed(() => new Date().toISOString().slice(0, 10))
 const favoriteVms = computed(() => vms.value.filter((vm) => vm.isFavorite).slice(0, 8))
 const pinnedWikiPages = computed(() => wikiPages.value.filter((page) => page.isPinned).slice(0, 8))
+const todayLog = computed(() => logs.value.find((log) => log.date === today.value) ?? null)
 const todayTodos = computed(() =>
   todos.value
     .filter((todo) => todo.status !== 'Done' && todo.status !== 'Archived' && (!todo.dueDate || todo.dueDate <= today.value))
@@ -770,12 +771,16 @@ onMounted(checkAuth)
 
         <DashboardPage
           v-if="activeSection === 'dashboard'"
+          :today="today"
+          :today-log="todayLog"
           :today-todos="todayTodos"
           :recent-logs="recentLogs"
           :favorite-vms="favoriteVms"
           :recent-wiki-pages="recentWikiPages"
           :todo-status-options="todoStatusOptions"
           @open-section="openSection"
+          @create-today-log="openLogDialog()"
+          @edit-log="openLogDialog"
           @view-vm="openVmView"
           @view-log="openLogView"
           @view-todo="openTodoView"
