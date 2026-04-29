@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Assistant.Api.Data;
+using Assistant.Api.Infrastructure;
 using Assistant.Api.Features.Settings;
 using Assistant.Api.Services;
 using Microsoft.EntityFrameworkCore;

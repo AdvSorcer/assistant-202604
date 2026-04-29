@@ -1,4 +1,4 @@
-using Assistant.Api.Data;
+using Assistant.Api.Infrastructure;
 using Assistant.Api.Features.Logs;
 using Assistant.Api.Features.Todos;
 using Assistant.Api.Features.Vms;

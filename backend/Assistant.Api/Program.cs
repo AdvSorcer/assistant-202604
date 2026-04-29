@@ -1,4 +1,4 @@
-using Assistant.Api.Data;
+using Assistant.Api.Infrastructure;
 using Assistant.Api.Features.Auth;
 using Assistant.Api.Features.AiWeeklyReports;
 using Assistant.Api.Features.Backup;

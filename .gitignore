@@ -8,5 +8,5 @@ dist/
 *.db
 *.db-shm
 *.db-wal
-backend/Assistant.Api/data/
+backend/Assistant.Api/Data/
 .DS_Store

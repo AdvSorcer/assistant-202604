@@ -1,4 +1,4 @@
-using Assistant.Api.Data;
+using Assistant.Api.Infrastructure;
 using Assistant.Api.Models;
 using Assistant.Api.Services;
 using Microsoft.EntityFrameworkCore;

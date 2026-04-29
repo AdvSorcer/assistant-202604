@@ -110,7 +110,7 @@ Features/
 資料層：
 
 ```text
-Data/
+Infrastructure/
   AssistantDbContext.cs
 
 Models/
