@@ -29,7 +29,7 @@ Docker Compose：
 ```bash
 cp .env.example .env
 openssl rand -base64 32
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+make dev
 ```
 
 Docker Compose 網址：
@@ -40,7 +40,7 @@ Docker Compose 網址：
 正式部署：
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+make prod
 ```
 
 正式環境只公開前端入口 `80`，API container 不 publish port；前端 Nginx 會把 `/api/*` proxy 到 Docker network 內的 `api:8080`。
