@@ -35,6 +35,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddDbContext<AssistantDbContext>(options =>
     options.UseSqlite(connectionString));
+builder.Services.Configure<DatabaseBackupOptions>(builder.Configuration.GetSection("AutomaticBackup"));
+builder.Services.AddSingleton<DatabaseBackupService>();
+builder.Services.AddHostedService<DatabaseBackupWorker>();
 builder.Services.AddScoped<IPasswordCipher, PasswordCipher>();
 builder.Services.AddSingleton<SessionStore>();
 builder.Services.AddHttpClient();

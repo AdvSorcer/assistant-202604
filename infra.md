@@ -9,6 +9,7 @@
 - Auth：單使用者密碼登入，後端記憶體 session token
 - Secrets：VM 密碼使用 AES-GCM 加密後存入 SQLite，資料加密金鑰存放於資料目錄 secret file
 - Deploy：Docker Compose，SQLite DB 透過 Docker volume 保存
+- Backup：後端 Hosted Service 每日自動備份 SQLite DB 到資料 volume
 
 ## 啟動方式
 
@@ -186,6 +187,44 @@ db.Database.EnsureCreated();
 目前也會在啟動時建立 `AppSettings` table（若不存在），用來保存 AI 設定。
 
 未來若 schema 常變，建議改成 EF Core migrations。
+
+## 自動備份
+
+後端 `DatabaseBackupWorker` 以 Hosted Service 常駐執行，預設每天 02:00 使用 SQLite backup API 建立 DB 備份。
+
+預設設定位於 `appsettings.json`：
+
+```json
+"AutomaticBackup": {
+  "Enabled": true,
+  "TimeOfDay": "02:00",
+  "TimeZone": "Asia/Taipei",
+  "RetentionCount": 30
+}
+```
+
+備份時間與檔名使用 `AutomaticBackup:TimeZone`，預設為台灣時間 `Asia/Taipei`。
+
+備份檔位置：
+
+```text
+{SQLite DB 所在資料夾}/backups/db/assistant-yyyyMMdd-HHmmss.db
+```
+
+Docker 部署時會在：
+
+```text
+/app/data/backups/db/
+```
+
+設計注意：
+
+- worker 只負責排程與觸發，不持有資料集合。
+- 每次備份建立短生命週期 SQLite connection。
+- 使用 SQLite backup API，不直接把整個 DB 載入記憶體。
+- 同時間只允許一個備份執行。
+- 啟動時若最近 24 小時沒有備份會補跑一次。
+- 保留最近 `RetentionCount` 份，避免備份檔無限累積。
 
 ## 認證與安全
 

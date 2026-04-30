@@ -2,6 +2,7 @@ services:
   api:
     build:
       context: ./backend/Assistant.Api
+    restart: unless-stopped
     volumes:
       - assistant-data:/app/data
     healthcheck:
@@ -14,6 +15,7 @@ services:
   frontend:
     build:
       context: ./frontend
+    restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy

@@ -20,6 +20,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
 
 第一次啟動時，系統會自動在 SQLite 建立登入密碼 `admin` 的 hash，並在資料目錄建立 secret file 加密金鑰。登入後請立即到「設定」頁修改登入密碼。
 
+系統會每天台灣時間 02:00 自動備份 SQLite 資料庫，並保留最近 30 份。
+
 ## 2. 檢查
 
 用瀏覽器打開正式網址或主機 IP，例如：
@@ -61,6 +63,7 @@ assistant-data:/app/data
 
 - SQLite 資料庫
 - `secrets/encryption.key`
+- `backups/db/*.db`
 - 系統內建匯出的 JSON 備份
 
 搬遷主機時，請保留整個 `assistant-data` volume；SQLite 與 `secrets/encryption.key` 要一起保留，舊密碼資料才解得開。
