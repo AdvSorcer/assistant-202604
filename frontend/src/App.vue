@@ -27,6 +27,8 @@ import type {
   DailyLog,
   GlobalSearchResult,
   NavSection,
+  SecuritySettings,
+  SecuritySettingsForm,
   TodoItem,
   TodoStatus,
   TodoStatusOption,
@@ -58,6 +60,9 @@ const importingBackup = ref(false)
 const aiSettings = ref<AiSettings | null>(null)
 const aiSettingsForm = ref<AiSettingsForm>({ model: 'minimax/minimax-m2.7', apiKey: '' })
 const savingAiSettings = ref(false)
+const securitySettings = ref<SecuritySettings | null>(null)
+const securitySettingsForm = ref<SecuritySettingsForm>({ adminPassword: '', rotateEncryptionKey: false })
+const savingSecuritySettings = ref(false)
 const vms = ref<Vm[]>([])
 const logs = ref<DailyLog[]>([])
 const todos = ref<TodoItem[]>([])
@@ -309,12 +314,13 @@ function clearAuth() {
 async function loadDashboard() {
   loading.value = true
   try {
-    const [vmResult, logResult, todoResult, wikiResult, aiSettingsResult] = await Promise.all([
+    const [vmResult, logResult, todoResult, wikiResult, aiSettingsResult, securitySettingsResult] = await Promise.all([
       api.get<Vm[]>('/vms'),
       api.get<DailyLog[]>('/logs'),
       api.get<TodoItem[]>('/todos'),
       api.get<WikiPage[]>('/wiki'),
       api.get<AiSettings>('/settings/ai'),
+      api.get<SecuritySettings>('/settings/security'),
     ])
 
     vms.value = vmResult.data
@@ -323,6 +329,8 @@ async function loadDashboard() {
     wikiPages.value = wikiResult.data
     aiSettings.value = aiSettingsResult.data
     aiSettingsForm.value = { model: aiSettingsResult.data.model, apiKey: '' }
+    securitySettings.value = securitySettingsResult.data
+    securitySettingsForm.value = { adminPassword: '', rotateEncryptionKey: false }
   } catch (error) {
     if ((error as { response?: { status?: number } }).response?.status === 401) {
       clearAuth()
@@ -355,6 +363,29 @@ async function saveAiSettings() {
     ElMessage.error(toErrorMessage(error))
   } finally {
     savingAiSettings.value = false
+  }
+}
+
+async function saveSecuritySettings() {
+  if (!securitySettingsForm.value.adminPassword.trim() && !securitySettingsForm.value.rotateEncryptionKey) {
+    ElMessage.warning('請輸入要更新的登入密碼或勾選重新產生加密金鑰')
+    return
+  }
+
+  savingSecuritySettings.value = true
+  try {
+    const result = await api.put<SecuritySettings>('/settings/security', {
+      adminPassword: securitySettingsForm.value.adminPassword.trim() || null,
+      rotateEncryptionKey: securitySettingsForm.value.rotateEncryptionKey,
+    })
+    securitySettings.value = result.data
+    securitySettingsForm.value = { adminPassword: '', rotateEncryptionKey: false }
+    ElMessage.success('系統安全設定已儲存')
+    await loadDashboard()
+  } catch (error) {
+    ElMessage.error(toErrorMessage(error))
+  } finally {
+    savingSecuritySettings.value = false
   }
 }
 
@@ -880,15 +911,19 @@ onMounted(checkAuth)
         <SettingsPage
           v-if="activeSection === 'settings'"
           v-model:ai-settings-form="aiSettingsForm"
+          v-model:security-settings-form="securitySettingsForm"
           :selected-backup-file="selectedBackupFile"
           :backup-import-preview="backupImportPreview"
           :importing-backup="importingBackup"
           :ai-settings="aiSettings"
           :saving-ai-settings="savingAiSettings"
+          :security-settings="securitySettings"
+          :saving-security-settings="savingSecuritySettings"
           @export-backup="exportBackup"
           @choose-backup-file="openBackupFilePicker"
           @import-backup="importBackup"
           @save-ai-settings="saveAiSettings"
+          @save-security-settings="saveSecuritySettings"
         />
 
         <input

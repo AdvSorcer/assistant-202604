@@ -78,6 +78,16 @@ export type AiSettingsForm = {
   apiKey: string
 }
 
+export type SecuritySettings = {
+  hasAdminPassword: boolean
+  hasEncryptionKey: boolean
+}
+
+export type SecuritySettingsForm = {
+  adminPassword: string
+  rotateEncryptionKey: boolean
+}
+
 export type AiWeeklyReportResponse = {
   report: string
   logsCount: number

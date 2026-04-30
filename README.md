@@ -15,25 +15,13 @@
 - 日誌：以日期與日誌內容為核心欄位，支援 Markdown 編輯與預覽。
 - 代辦清單：支援有日期或無日期的待辦事項，可設定待辦、進行中、完成、封存。
 - Wiki 文件：以 Markdown 內容作為文件儲存格式，支援編輯與預覽。
-- VM 密碼：後端使用 AES-GCM 加密後存入 SQLite。
+- VM 密碼：後端使用 AES-GCM 加密後存入 SQLite，加密金鑰存放在資料目錄的 secret file。
 - 單使用者登入：保護資料 API，開發環境未設定時預設密碼為 `admin`。
 - 搜尋、代辦狀態篩選、列表分頁與 JSON 備份匯出。
 
 ## 快速啟動
 
-先建立 `.env`：
-
-```bash
-cp .env.example .env
-```
-
-產生 32-byte base64 加密金鑰，並填入 `.env` 的 `Security__EncryptionKey`：
-
-```bash
-openssl rand -base64 32
-```
-
-同時請修改 `.env` 的 `Security__AdminPassword` 作為登入密碼。
+第一次啟動時，系統會自動在 SQLite 建立登入密碼 `admin` 的 hash，並在資料目錄建立一組 secret file 加密金鑰；登入後請到「設定」頁修改登入密碼。
 
 啟動服務：
 
@@ -70,6 +58,4 @@ npm run dev --prefix frontend
 backend/Assistant.Api   ASP.NET Core Web API
 frontend                Vue 3 + Element Plus
 docker-compose.yml      Docker Compose 啟動設定
-.env.example            環境變數範例
 ```
-

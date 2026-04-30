@@ -2,11 +2,6 @@ services:
   api:
     build:
       context: ./backend/Assistant.Api
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      ConnectionStrings__Default: Data Source=/app/data/assistant.db
     volumes:
       - assistant-data:/app/data
     healthcheck:

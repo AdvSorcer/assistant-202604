@@ -35,7 +35,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddDbContext<AssistantDbContext>(options =>
     options.UseSqlite(connectionString));
-builder.Services.AddSingleton<IPasswordCipher, PasswordCipher>();
+builder.Services.AddScoped<IPasswordCipher, PasswordCipher>();
 builder.Services.AddSingleton<SessionStore>();
 builder.Services.AddHttpClient();
 builder.Services.AddCors(options =>
@@ -62,6 +62,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AssistantDbContext>();
     db.Database.EnsureCreated();
     EnsureCompatibleSchema(db);
+    SettingsEndpoints.EnsureSecurityDefaults(db, builder.Configuration);
 }
 
 if (app.Environment.IsDevelopment())

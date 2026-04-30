@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using Assistant.Api.Features.Settings;
+using Assistant.Api.Infrastructure;
 
 namespace Assistant.Api.Features.Auth;
 
@@ -11,15 +13,12 @@ public static class AuthEndpoints
     {
         var authApi = api.MapGroup("/auth");
 
-        authApi.MapPost("/login", (LoginRequest request, IConfiguration configuration, IWebHostEnvironment environment, SessionStore sessions) =>
+        authApi.MapPost("/login", async (LoginRequest request, AssistantDbContext db, SessionStore sessions) =>
         {
-            var configuredPassword = configuration["Security:AdminPassword"];
-            var passwordHash = configuration["Security:AdminPasswordSha256"];
-            var expectedPassword = environment.IsDevelopment() ? configuredPassword ?? "admin" : configuredPassword;
+            var storedPasswordHash = await SettingsEndpoints.GetSettingValue(db, SettingsEndpoints.SecurityAdminPasswordHashSetting);
 
-            var isValid = !string.IsNullOrWhiteSpace(passwordHash)
-                ? FixedTimeEqualsNormalizedHex(HashPassword(request.Password), passwordHash)
-                : !string.IsNullOrWhiteSpace(expectedPassword) && FixedTimeEquals(request.Password, expectedPassword);
+            var isValid = !string.IsNullOrWhiteSpace(storedPasswordHash) &&
+                FixedTimeEqualsNormalizedHex(SettingsEndpoints.HashPassword(request.Password), storedPasswordHash);
 
             if (!isValid)
             {
@@ -74,12 +73,6 @@ public static class AuthEndpoints
     private static string GetBearerToken(HttpRequest request)
     {
         return request.Headers.Authorization.ToString().Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string HashPassword(string value)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(value));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     private static bool FixedTimeEquals(string left, string right)

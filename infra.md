@@ -7,7 +7,7 @@
 - Frontend：Vue 3、Vite、TypeScript、Element Plus、md-editor-v3
 - Backend：ASP.NET Core Minimal API、EF Core、SQLite
 - Auth：單使用者密碼登入，後端記憶體 session token
-- Secrets：VM 密碼使用 AES-GCM 加密後存入 SQLite
+- Secrets：VM 密碼使用 AES-GCM 加密後存入 SQLite，資料加密金鑰存放於資料目錄 secret file
 - Deploy：Docker Compose，SQLite DB 透過 Docker volume 保存
 
 ## 啟動方式
@@ -27,8 +27,6 @@ npm run dev --prefix frontend
 Docker Compose：
 
 ```bash
-cp .env.example .env
-openssl rand -base64 32
 make dev
 ```
 
@@ -45,14 +43,7 @@ make prod
 
 正式環境只公開前端入口 `80`，API container 不 publish port；前端 Nginx 會把 `/api/*` proxy 到 Docker network 內的 `api:8080`。
 
-`.env` 重要設定：
-
-```text
-Security__EncryptionKey=base64-encoded-32-byte-key
-Security__AdminPassword=change-me
-```
-
-開發環境若沒有設定 `Security__AdminPassword`，預設登入密碼是 `admin`。
+系統會在第一次啟動時把登入密碼 hash 寫入 SQLite，預設密碼為 `admin`；資料加密金鑰會自動隨機產生並存放於資料目錄 secret file。登入後可到設定頁修改登入密碼，也可重新產生加密金鑰並重加密既有密碼資料。
 
 ## 後端架構
 
@@ -201,7 +192,7 @@ db.Database.EnsureCreated();
 登入流程：
 
 1. 前端呼叫 `POST /api/auth/login`
-2. 後端驗證 `Security:AdminPassword` 或 `Security:AdminPasswordSha256`
+2. 後端驗證 SQLite `AppSettings` 內的 `security.adminPasswordSha256`
 3. 後端建立記憶體 session token
 4. 前端把 token 存在 `localStorage`
 5. 後續 API 使用 `Authorization: Bearer {token}`
@@ -219,15 +210,16 @@ db.Database.EnsureCreated();
 - 目前是單使用者設計，不是多帳號系統。
 - 若要正式化，可改成 JWT、cookie auth，或 ASP.NET Core Identity。
 - `POST /api/auth/login` 有 fixed-window rate limit，目前設定為每分鐘 5 次，超過回 `429 Too Many Requests`。
-- 密碼 hash 模式使用 fixed-time 比對；plain password 模式也使用 fixed-time 比對。
+- 密碼 hash 使用 fixed-time 比對。
 
 VM 密碼加密：
 
 - 實作位置：`Services/PasswordCipher.cs`
 - 使用 AES-GCM
-- 加密金鑰來自 `Security:EncryptionKey`
-- 開發環境若沒設定金鑰會使用 development fallback
-- 正式使用一定要設定 `Security__EncryptionKey`
+- 加密金鑰來自資料目錄下的 `secrets/encryption.key`
+- 第一次啟動時系統會自動產生 32-byte base64 金鑰並寫入 secret file
+- 若偵測到舊版 SQLite `AppSettings` 內的 `security.encryptionKey`，啟動時會遷移到 secret file 並移除 DB 內的舊 key
+- 設定頁可重新產生金鑰；更換時會重新加密既有 VM 密碼與 OpenRouter API key
 - OpenRouter API key 也使用同一個 `PasswordCipher` 加密後保存於 `AppSettings`
 
 ## AI 週報

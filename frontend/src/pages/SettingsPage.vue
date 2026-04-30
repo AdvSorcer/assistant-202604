@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Download } from '@element-plus/icons-vue'
-import type { AiSettings, AiSettingsForm, BackupImportPreview } from '../types'
+import type { AiSettings, AiSettingsForm, BackupImportPreview, SecuritySettings, SecuritySettingsForm } from '../types'
 
 defineProps<{
   selectedBackupFile: File | null
@@ -8,15 +8,19 @@ defineProps<{
   importingBackup: boolean
   aiSettings: AiSettings | null
   savingAiSettings: boolean
+  securitySettings: SecuritySettings | null
+  savingSecuritySettings: boolean
 }>()
 
 const aiSettingsForm = defineModel<AiSettingsForm>('aiSettingsForm', { required: true })
+const securitySettingsForm = defineModel<SecuritySettingsForm>('securitySettingsForm', { required: true })
 
 const emit = defineEmits<{
   exportBackup: []
   chooseBackupFile: []
   importBackup: []
   saveAiSettings: []
+  saveSecuritySettings: []
 }>()
 </script>
 
@@ -33,6 +37,35 @@ const emit = defineEmits<{
         <p>匯出目前 SQLite 內的 VM、日誌、代辦與 Wiki 資料為 JSON 檔。</p>
       </div>
       <el-button type="primary" :icon="Download" @click="emit('exportBackup')">匯出備份</el-button>
+    </div>
+    <el-divider />
+    <div class="settings-panel ai-settings-panel">
+      <div>
+        <h2>系統安全</h2>
+        <p>設定登入密碼。資料加密金鑰會保存在資料目錄的 secret file，需要時可重新產生並重加密。</p>
+      </div>
+      <el-form class="ai-settings-form" label-position="top">
+        <el-form-item label="登入密碼">
+          <el-input
+            v-model="securitySettingsForm.adminPassword"
+            type="password"
+            show-password
+            placeholder="留空代表不更新"
+          />
+        </el-form-item>
+        <el-form-item label="資料加密金鑰">
+          <el-checkbox v-model="securitySettingsForm.rotateEncryptionKey">
+            重新產生加密金鑰並重加密既有密碼資料
+          </el-checkbox>
+        </el-form-item>
+        <div class="ai-settings-actions">
+          <el-tag v-if="securitySettings?.hasAdminPassword" type="success">登入密碼已設定</el-tag>
+          <el-tag v-else type="warning">登入密碼尚未設定</el-tag>
+          <el-tag v-if="securitySettings?.hasEncryptionKey" type="success">加密金鑰已設定</el-tag>
+          <el-tag v-else type="warning">加密金鑰尚未設定</el-tag>
+          <el-button type="primary" :loading="savingSecuritySettings" @click="emit('saveSecuritySettings')">儲存安全設定</el-button>
+        </div>
+      </el-form>
     </div>
     <el-divider />
     <div class="settings-panel ai-settings-panel">

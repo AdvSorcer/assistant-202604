@@ -16,7 +16,6 @@ RUN mkdir -p /app/data
 
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "Assistant.Api.dll"]
+ENTRYPOINT ["dotnet", "Assistant.Api.dll", "--urls", "http://+:8080"]
