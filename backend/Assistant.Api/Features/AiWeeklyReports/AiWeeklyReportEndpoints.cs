@@ -97,7 +97,7 @@ public static class AiWeeklyReportEndpoints
         builder.AppendLine();
         builder.AppendLine("輸出格式：");
         builder.AppendLine("1. 標題：週報 YYYY/MM/DD-YYYY/MM/DD");
-        builder.AppendLine("2. 本週重點：3-6 點條列，聚焦成果、進度與影響");
+        builder.AppendLine("2. 本週重點：條列聚焦成果、進度與影響");
         builder.AppendLine("3. 進行中事項：列出尚在推進的工作與目前狀態");
         builder.AppendLine("4. 風險與需協助事項：沒有就寫「無」");
         builder.AppendLine("5. 下週計畫：依日誌內容推估合理下一步，避免過度承諾");
