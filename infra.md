@@ -284,6 +284,7 @@ API：
 4. 後端依日期範圍讀取 `DailyLogs`
 5. 後端呼叫 OpenRouter `https://openrouter.ai/api/v1/chat/completions`
 6. 回傳適合直接複製到 Outlook 的繁體中文週報文字
+7. 週報模板以主管閱讀角度整理：標題、本週摘要、已完成事項、進行中事項、風險/阻塞/需協助事項、下週計畫
 
 預設模型：
 
