@@ -1,4 +1,4 @@
 services:
   frontend:
     ports:
-      - "80:80"
+      - "18080:80"

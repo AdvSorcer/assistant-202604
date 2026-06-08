@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const defaultApiBaseUrl = window.location.port === '5173'
-  ? 'http://localhost:5251/api'
+  ? 'http://localhost:15251/api'
   : '/api'
 
 export const api = axios.create({

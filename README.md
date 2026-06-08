@@ -26,14 +26,14 @@
 啟動服務：
 
 ```bash
-docker compose up --build
+make dev
 ```
 
 啟動後：
 
-- 前端：[http://localhost:8080](http://localhost:8080)
-- API：[http://localhost:5251/api](http://localhost:5251/api)
-- OpenAPI：[http://localhost:5251/openapi/v1.json](http://localhost:5251/openapi/v1.json)
+- 前端：[http://localhost:18080](http://localhost:18080)
+- API：[http://localhost:15251/api](http://localhost:15251/api)
+- OpenAPI：[http://localhost:15251/openapi/v1.json](http://localhost:15251/openapi/v1.json)
 
 ## 本機開發
 
@@ -50,7 +50,7 @@ npm install --prefix frontend
 npm run dev --prefix frontend
 ```
 
-本機前端預設呼叫 `http://localhost:5251/api`。
+本機前端預設呼叫 `http://localhost:15251/api`。
 
 ## 專案結構
 

@@ -23,7 +23,7 @@ npm run dev --prefix frontend
 本機開發網址：
 
 - Frontend：[http://localhost:5173](http://localhost:5173)
-- API：[http://localhost:5251/api](http://localhost:5251/api)
+- API：[http://localhost:15251/api](http://localhost:15251/api)
 
 Docker Compose：
 
@@ -33,8 +33,8 @@ make dev
 
 Docker Compose 網址：
 
-- Frontend：[http://localhost:8080](http://localhost:8080)
-- API：[http://localhost:5251/api](http://localhost:5251/api)
+- Frontend：[http://localhost:18080](http://localhost:18080)
+- API：[http://localhost:15251/api](http://localhost:15251/api)
 
 正式部署：
 
@@ -42,7 +42,7 @@ Docker Compose 網址：
 make prod
 ```
 
-正式環境只公開前端入口 `80`，API container 不 publish port；前端 Nginx 會把 `/api/*` proxy 到 Docker network 內的 `api:8080`。
+正式環境只公開前端入口 `18080`，API container 不 publish port；前端 Nginx 會把 `/api/*` proxy 到 Docker network 內的 `api:8080`。
 
 系統會在第一次啟動時把登入密碼 hash 寫入 SQLite，預設密碼為 `admin`；資料加密金鑰會自動隨機產生並存放於資料目錄 secret file。登入後可到設定頁修改登入密碼，也可重新產生加密金鑰並重加密既有密碼資料。
 
@@ -486,12 +486,12 @@ src/lib/api.ts
 本機開發：
 
 - Frontend：5173
-- API：5251
+- API：15251
 
 Docker Compose：
 
-- Frontend：8080
-- API：5251
+- Frontend：18080
+- API：15251
 
 Docker Compose 的 `api` service 有 healthcheck，容器內會呼叫：
 
