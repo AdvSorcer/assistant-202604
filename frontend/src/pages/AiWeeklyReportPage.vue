@@ -3,6 +3,7 @@ import { CopyDocument, MagicStick } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
 import { api, toErrorMessage } from '../lib/api'
+import { copyToClipboard } from '../lib/clipboard'
 import type { AiSettings, AiWeeklyReportResponse, DailyLog } from '../types'
 
 const props = defineProps<{
@@ -54,8 +55,12 @@ async function copyReport() {
     return
   }
 
-  await navigator.clipboard.writeText(report.value)
-  ElMessage.success('週報已複製')
+  try {
+    await copyToClipboard(report.value)
+    ElMessage.success('週報已複製')
+  } catch {
+    ElMessage.error('無法複製到剪貼簿')
+  }
 }
 
 function getDefaultWeekRange(): [string, string] {

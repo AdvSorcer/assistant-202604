@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Connection, CopyDocument, Link, Monitor } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { copyToClipboard } from '../lib/clipboard'
 import type { Vm, VmAccount, VmUrl } from '../types'
 
 type VmForm = {
@@ -38,7 +39,7 @@ async function copyText(value: string | undefined, label: string) {
   }
 
   try {
-    await navigator.clipboard.writeText(text)
+    await copyToClipboard(text)
     ElMessage.success(`${label} 已複製`)
   } catch {
     ElMessage.error('無法複製到剪貼簿')
